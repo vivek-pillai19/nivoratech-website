@@ -7,6 +7,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 
+const FORMSPREE_URL = 'https://formspree.io/f/xnjgbwjv';
+
 const FinalCTA = () => {
   const { toast } = useToast();
   const [formData, setFormData] = useState({
@@ -16,15 +18,38 @@ const FinalCTA = () => {
     businessType: '',
     message: ''
   });
+  const [submitting, setSubmitting] = useState(false);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    localStorage.setItem('nivoratech_consultation', JSON.stringify(formData));
-    toast({
-      title: "Request Received",
-      description: "We'll be in touch shortly to schedule your consultation.",
-    });
-    setFormData({ name: '', email: '', company: '', businessType: '', message: '' });
+    setSubmitting(true);
+    try {
+      const res = await fetch(FORMSPREE_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: formData.name,
+          email: formData.email,
+          company: formData.company,
+          businessType: formData.businessType,
+          message: formData.message,
+        }),
+      });
+      if (!res.ok) throw new Error('Submit failed');
+      toast({
+        title: "Request Received",
+        description: "We'll be in touch shortly to schedule your consultation.",
+      });
+      setFormData({ name: '', email: '', company: '', businessType: '', message: '' });
+    } catch {
+      toast({
+        title: "Something went wrong",
+        description: "Please try again or email us at partners@nivoratech.in",
+        variant: "destructive",
+      });
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -125,9 +150,10 @@ const FinalCTA = () => {
                 <Button 
                   type="submit" 
                   size="lg"
+                  disabled={submitting}
                   className="w-full bg-primary text-primary-foreground text-lg py-6 hover:bg-primary/90 transition-colors shadow-md"
                 >
-                  Schedule Call
+                  {submitting ? 'Sending...' : 'Schedule Call'}
                 </Button>
               </div>
             </form>
